@@ -2,6 +2,8 @@ import numpy as np
 from PIL import Image
 from skimage import color
 from pathlib import Path
+import cv2
+import os
 
 def count_files_in_directory(directory):
     # Create a Path object for the specified directory
@@ -11,7 +13,7 @@ def count_files_in_directory(directory):
     files = [f for f in path.iterdir() if f.is_file()]
 
     return len(files)
-
+"""
 width = 600
 height = 400
 
@@ -31,4 +33,14 @@ except:
     print("End of files reached.")
 
 print(image_stack.shape)
+"""
 
+Path2 = './dataimage/'
+files2 = os.listdir(Path2)
+images = []
+
+for name in files2:
+    temp = cv2.imread(Path2+name)
+    temp = cv2.cvtColor(temp,cv2.COLOR_BGR2GRAY)
+    temp = cv2.resize(temp, (100,100), interpolation = cv2.INTER_AREA)
+    images.append(temp.flatten())
