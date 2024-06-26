@@ -8,7 +8,7 @@ import os
 class SVDApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Camera Capture")
+        self.title("Portable SVD")
 
         # Create a container to hold all the frames
         container = ttk.Frame(self)
@@ -18,20 +18,20 @@ class SVDApp(tk.Tk):
         self.frames = {}
 
         # Create frames and add them to the container
-        for F in (StartPage, CameraPage):
+        for F in (MainPage, StorePage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
-        # Show the start page initially
-        self.show_frame("StartPage")
+        # Show the main page initially
+        self.show_frame("MainPage")
 
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
 
-class StartPage(ttk.Frame):
+class MainPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -40,10 +40,10 @@ class StartPage(ttk.Frame):
         label.pack(pady=10)
 
         button = ttk.Button(self, text="Go to Camera",
-                            command=lambda: controller.show_frame("CameraPage"))
+                            command=lambda: controller.show_frame("StorePage"))
         button.pack()
 
-class CameraPage(ttk.Frame):
+class StorePage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
@@ -69,7 +69,7 @@ class CameraPage(ttk.Frame):
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            # Convert the frame to RGB (OpenCV uses BGR by default)
+            # Convert the frame to RGB (apparently opencv uses BGR)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # Convert the frame to an ImageTk object
             img = Image.fromarray(frame)
