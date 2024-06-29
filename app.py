@@ -12,6 +12,9 @@ class SVDApp(tk.Tk):                                                        #---
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
+        self.title("Portable SVD")
+
+        self.camera_handler = CameraHandler()
 
         container = ttk.Frame(self)                                         #-----------Creating a container to hold all the frames
         container.pack(side="top", fill="both", expand=True)
@@ -22,7 +25,7 @@ class SVDApp(tk.Tk):                                                        #---
         self.frames = {}                                                    #-----------Dictionary to keep track of all the frames
 
         for F in (MainPage, ScanPage, TrainPage, ViewPage):                 #-----------Iterating over all the frames
-            frame = F(container, self)
+            frame = F(parent=container, controller=self, camera_handler=self.camera_handler)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
         
@@ -35,7 +38,7 @@ class SVDApp(tk.Tk):                                                        #---
 
 class MainPage(ttk.Frame):                                                  #-----------Main Page of the GUI
 
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, camera_handler):
         tk.Frame.__init__(self, parent)
 
         label = ttk.Label(self, text="Welcome to Portable SVD", font=LARGEFONT)
@@ -67,10 +70,12 @@ class MainPage(ttk.Frame):                                                  #---
 
 class ScanPage(ttk.Frame):                                                  #-----------Scan Page of the GUI
 
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, camera_handler):
         tk.Frame.__init__(self, parent)
 
         self.controller = controller
+        self.camera_handler = camera_handler
+
         self.match = Match(0,0)
         self.current_frame = None
 
@@ -119,13 +124,12 @@ class ScanPage(ttk.Frame):                                                  #---
         back_button = ttk.Button(button_frame, text="Back", command=lambda: controller.show_frame(MainPage))
         back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=10)
 
-        self.cap = cv2.VideoCapture(0)
         self.update_image()
 
     
     def update_image(self):
-        ret, frame = self.cap.read()                                        #-----------Reading the frame from the camera
-        if ret:
+        frame = self.camera_handler.get_frame()                             #-----------Reading the frame from the camera
+        if frame is not None:
             self.current_frame = frame                                      #-----------Setting the current frame to the new frame
             resized_frame = cv2.resize(frame, (240, 180))                   #-----------Resizing the frame
             cv2image = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)       #-----------Converting the frame to RGB fromt the weird BGR
@@ -148,28 +152,96 @@ class ScanPage(ttk.Frame):                                                  #---
             print("No current frame available")
         
 
-    def __del__(self):                                                      #-----------Destructor to release the camera
-        if self.cap.isOpened():
-            self.cap.release()
-
-
 class TrainPage(ttk.Frame):                                                 #-----------Train Page of the GUI
     
-        def __init__(self, parent, controller):
-            tk.Frame.__init__(self, parent)
+    def __init__(self, parent, controller, camera_handler):
+        tk.Frame.__init__(self, parent)
+
+        self.controller = controller
+        self.camera_handler = camera_handler
+
+        self.train_images = []
+
+        label = ttk.Label(self, text="Train Page", font=LARGEFONT)
+        label.pack(fill=tk.BOTH, expand=tk.TRUE, pady=10, padx=10)
+
+        #-----------------------LEFT-FRAME Camera----------------------#
+        image_frame = ttk.Frame(self)
+        image_frame.pack(side=tk.LEFT, padx=10, pady=10)
+
+        self.image_label = ttk.Label(image_frame)
+        self.image_label.pack()
+
+        #----------------------RIGHT-FRAME Training--------------------#
+        train_frame = ttk.Frame(self)
+        train_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.RIGHT, padx=10, pady=10)
+
+        # Button for taking a photo, saves it into an array of max 4 images
+        save_button = ttk.Button(train_frame, text="Take Photo", command=self.take_photo)
+        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+
+        self.entry_label = ttk.Label(train_frame, text="Name:")
+        self.entry_label.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=0)
+
+        # Entry for the name of the newly trained object
+        self.entry_name = ttk.Entry(train_frame)
+        self.entry_name.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=0)
+
+        # Button for saving the new entry
+        save_button = ttk.Button(train_frame, text="Save Entry", command=self.save_new_entry)
+        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+
+        back_button = ttk.Button(train_frame, text="Back", command=lambda: controller.show_frame(MainPage))
+        back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=10)
+
+        self.update_image()
+
+    def update_image(self):
+        frame = self.camera_handler.get_frame()                             #-----------Reading the frame from the camera
+        if frame is not None:
+            self.current_frame = frame                                      #-----------Setting the current frame to the new frame
+            resized_frame = cv2.resize(frame, (240, 180))                   #-----------Resizing the frame
+            cv2image = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)       #-----------Converting the frame to RGB fromt the weird BGR
+            img = Image.fromarray(cv2image)                                 #-----------Converting the frame to an Image object
+            imgtk = ImageTk.PhotoImage(image=img)                           #-----------Converting the Image object to an ImageTk object
+            self.image_label.imgtk = imgtk                                  #-----------Setting the image label to the new image
+            self.image_label.configure(image=imgtk)                         #-----------Configuring the image label
+        self.image_label.after(30, self.update_image)                       #-----------Calling the update_image function again after 10ms
+
+    def take_photo(self):                                                   #-----------Function to save a photo as np-array
+        if hasattr(self, 'current_frame') and len(self.train_images) < 4:
+            self.train_images.append(self.current_frame)
+            print(len(self.train_images))
+        else:
+            print("No current frame available")
     
-            label = ttk.Label(self, text="Train Page", font=LARGEFONT)
-            label.pack(fill=tk.BOTH, expand=tk.TRUE, pady=10, padx=10)
+    def save_new_entry(self):
+        entry_name = self.entry_name.get()                                  #-----------Getting the name of the new entry from the widget
 
-            #-----------------------LEFT-FRAME Camera----------------------#
+        existing_entries = []                                               #-----------Checking if the name already exists
+        for filename in os.listdir("./source_images/"):
+            if filename.split("_")[0] not in existing_entries:
+                existing_entries.append(filename.split("_")[0])
 
+        if entry_name in existing_entries:
+            self.entry_label.configure(text="Name already exists")
+            return
+        else:
+            cnt = 0
+            for img in self.train_images:
+                cv2.imwrite(f"./source_images/{entry_name}_{cnt}.jpg", img) #-----------Saving the image to the source_images folder
+                cnt += 1
+            self.entry_label.configure(text="Entry saved")
 
+            svd_agent.train('./source_images/')                             #-----------Retraining the model with the new images
+
+        self.train_images = []
 
 
 
 class ViewPage(ttk.Frame):                                                  #-----------View Page of the GUI
     
-        def __init__(self, parent, controller):
+        def __init__(self, parent, controller, camera_handler):
             tk.Frame.__init__(self, parent)
     
             label = ttk.Label(self, text="View Page", font=LARGEFONT)
@@ -185,3 +257,4 @@ if __name__ == "__main__":                                                  #---
 
     app = SVDApp()
     app.mainloop()
+    app.camera_handler.release()

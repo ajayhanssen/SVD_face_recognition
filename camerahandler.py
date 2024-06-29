@@ -10,10 +10,11 @@ class CameraHandler():
     def get_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (240, 180))
-            return ImageTk.PhotoImage(image=Image.fromarray(frame))
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            #frame = cv2.resize(frame, (240, 180))
+            #return ImageTk.PhotoImage(image=Image.fromarray(frame))
+            return frame
         return None
     
-    def release():
+    def release(self, event=None):
         self.cap.release()
