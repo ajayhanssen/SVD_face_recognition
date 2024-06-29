@@ -7,6 +7,9 @@ class Match():
     def __init__(self, index=None, score=None):
         self.index = index
         self.score = score
+    
+    def __str__(self):
+        return f"Index: {self.index}, Score: {self.score}"
 
 class SVD_Object():
     """
@@ -105,9 +108,20 @@ def find_source_image(match: Match, directory : str ="./source_images/") -> str:
     Returns:
         name (str) : Name of the matched image
     """
-    trainfiles = os.listdir(directory)                                  #-----------List of all the files in the directory
-    return trainfiles[match.index]                                      #-----------Returning the name of the matched image
+    trainfiles = os.listdir(directory)                                      #-----------List of all the files in the directory
+    return trainfiles[match.index]                                          #-----------Returning the name of the matched image
 
+def get_obj_name_of_source_image(filename : str) -> str:
+    """
+    Function to get the name of the object from the filename,
+    returns everything before the first underscore
+
+    Inputs:
+        filename (str) : Name of the file
+    Returns:
+        name (str) : Name of the object
+    """
+    return filename.split("_")[0]
 
 if __name__ == "__main__":
     SVD = SVD_Object()
