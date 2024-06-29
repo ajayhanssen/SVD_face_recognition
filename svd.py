@@ -10,6 +10,20 @@ class Match():
     
     def __str__(self):
         return f"Index: {self.index}, Score: {self.score}"
+    
+    def find_source_image(self, directory : str ="./source_images/") -> str:
+        """
+        Function to find the source image based on the match object
+
+        Inputs:
+            match (Match) : Object containing index and score of the matched image
+            directory (str) : Folder containing images to train the model on
+        Returns:
+            name (str) : Name of the matched image
+        """
+        trainfiles = os.listdir(directory)                                      #-----------List of all the files in the directory
+        return trainfiles[self.index]                                          #-----------Returning the name of the matched image
+
 
 class SVD_Object():
     """
@@ -42,6 +56,7 @@ class SVD_Object():
 
         for file in trainfiles:                                             #-----------Iterating over all the files in the directory
             img = cv2.imread(directory + file, cv2.IMREAD_GRAYSCALE)
+            img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
             images.append(img.flatten())                                    #-----------Collapsing the image into a 1D array and appending to the list of images
         
         images = np.array(images)                                           #-----------Converting the list of images to a numpy array
@@ -80,6 +95,7 @@ class SVD_Object():
         #-------------------PREPROCESSING OF IMAGES----------------------#
 
         pred_image = cv2.cvtColor(pred_image, cv2.COLOR_BGR2GRAY)           #-----------Converting the image to grayscale
+        pred_image = cv2.resize(pred_image, (640, 480), interpolation=cv2.INTER_AREA) #-----------Resizing the image
         pred_image = pred_image.reshape(1, -1)                              #-----------Collapsing the image into a 1D array again
 
 
@@ -98,18 +114,6 @@ class SVD_Object():
 
         return Match(match_index, match_score)                              #-----------Returning the match object
 
-def find_source_image(match: Match, directory : str ="./source_images/") -> str:
-    """
-    Function to find the source image based on the match object
-
-    Inputs:
-        match (Match) : Object containing index and score of the matched image
-        directory (str) : Folder containing images to train the model on
-    Returns:
-        name (str) : Name of the matched image
-    """
-    trainfiles = os.listdir(directory)                                      #-----------List of all the files in the directory
-    return trainfiles[match.index]                                          #-----------Returning the name of the matched image
 
 def get_obj_name_of_source_image(filename : str) -> str:
     """
@@ -127,5 +131,5 @@ if __name__ == "__main__":
     SVD = SVD_Object()
     SVD.train("./source_images/")
     result = SVD.predict(cv2.imread("./source_images/1.jpg"))
-    name = find_source_image(result, "./source_images/")
+    name = result.find_source_image("./source_images/")
     print(name, result.score)

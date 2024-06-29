@@ -100,7 +100,7 @@ class ScanPage(ttk.Frame):                                                  #---
         self.match_label = ttk.Label(match_frame, text="Match:")
         self.match_label.pack(side=tk.LEFT)
 
-        match_name = find_source_image(self.match)
+        match_name = self.match.find_source_image("./source_images/")
         self.match_label_name = ttk.Label(match_frame, text=f"{match_name}")
         self.match_label_name.pack(side=tk.LEFT, padx=(5, 0))
 
@@ -141,7 +141,7 @@ class ScanPage(ttk.Frame):                                                  #---
             self.match = svd_agent.predict(pred_image)
             print(self.match)
 
-            match_name = find_source_image(self.match)
+            match_name = self.match.find_source_image("./source_images/")
             self.match_label_name.configure(text=f"{match_name}")
             self.score_label_value.configure(text=f"{round(self.match.score)}")
         else:
