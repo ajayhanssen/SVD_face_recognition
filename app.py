@@ -133,7 +133,7 @@ class ScanPage(ttk.Frame):                                                  #---
         frame = self.camera_handler.get_frame()                             #-----------Reading the frame from the camera
         if frame is not None:
             self.current_frame = frame                                      #-----------Setting the current frame to the new frame
-            resized_frame = cv2.resize(frame, (240, 180))                   #-----------Resizing the frame
+            resized_frame = cv2.resize(frame, (180, 135))                   #-----------Resizing the frame
             cv2image = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)       #-----------Converting the frame to RGB fromt the weird BGR
             img = Image.fromarray(cv2image)                                 #-----------Converting the frame to an Image object
             imgtk = ImageTk.PhotoImage(image=img)                           #-----------Converting the Image object to an ImageTk object
