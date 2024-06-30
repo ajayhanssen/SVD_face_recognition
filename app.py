@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 from svd import *
 from camerahandler import CameraHandler
 
-LARGEFONT = ("Verdana", 26)
+LARGEFONT = ("Verdana", 20)
 
 class SVDApp(tk.Tk):                                                        #-----------Class managing the GUI
 
@@ -171,14 +171,13 @@ class TrainPage(ttk.Frame):                                                 #---
 
         self.image_label = ttk.Label(image_frame)
         self.image_label.pack()
+        # Button for taking a photo, saves it into an array of max 4 images
+        save_button = ttk.Button(image_frame, text="Take Photo", command=self.take_photo)
+        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
 
         #----------------------RIGHT-FRAME Training--------------------#
         train_frame = ttk.Frame(self)
         train_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.RIGHT, padx=10, pady=10)
-
-        # Button for taking a photo, saves it into an array of max 4 images
-        save_button = ttk.Button(train_frame, text="Take Photo", command=self.take_photo)
-        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
 
         self.entry_label = ttk.Label(train_frame, text="Name:")
         self.entry_label.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=0)
@@ -191,8 +190,19 @@ class TrainPage(ttk.Frame):                                                 #---
         save_button = ttk.Button(train_frame, text="Save Entry", command=self.save_new_entry)
         save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
 
+        # Button for resetting the entry
+        reset_button = ttk.Button(train_frame, text="Reset Entry", command=self.reset_entry)
+        reset_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+
         back_button = ttk.Button(train_frame, text="Back", command=lambda: controller.show_frame(MainPage))
         back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=10)
+
+
+        self.images_frame = ttk.Frame(train_frame)
+        self.images_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=5, pady=5)
+
+        
+
 
         self.update_image()
 
@@ -208,13 +218,30 @@ class TrainPage(ttk.Frame):                                                 #---
             self.image_label.configure(image=imgtk)                         #-----------Configuring the image label
         self.image_label.after(30, self.update_image)                       #-----------Calling the update_image function again after 10ms
 
+
+    def update_images_frame(self, events=None):
+        # Clear the current images
+        for widget in self.images_frame.winfo_children():
+            widget.destroy()
+
+        # Convert NumPy arrays to PIL Images, resize, and convert to PhotoImage
+        images = [Image.fromarray(img) for img in self.train_images]
+        images = [img.resize((25, 25)) for img in images]  # Resize images
+        photos = [ImageTk.PhotoImage(img) for img in images]
+
+        for photo in photos:
+            label = ttk.Label(self.images_frame, image=photo)
+            label.image = photo  # Keep a reference to avoid garbage collection
+            label.pack(side=tk.LEFT, padx=2, pady=0)
+
     def take_photo(self):                                                   #-----------Function to save a photo as np-array
         if hasattr(self, 'current_frame') and len(self.train_images) < 4:
             self.train_images.append(self.current_frame)
             print(len(self.train_images))
         else:
             print("No current frame available")
-    
+        self.update_images_frame(self)
+
     def save_new_entry(self):
         entry_name = self.entry_name.get()                                  #-----------Getting the name of the new entry from the widget
 
@@ -236,7 +263,13 @@ class TrainPage(ttk.Frame):                                                 #---
             svd_agent.train('./source_images/')                             #-----------Retraining the model with the new images
 
         self.train_images = []
+        self.update_images_frame(self)
 
+    def reset_entry(self):
+        self.train_images = []
+        self.entry_name.delete(0, tk.END)
+        self.entry_label.configure(text="Name:")
+        self.update_images_frame(self)
 
 
 class ViewPage(ttk.Frame):                                                  #-----------View Page of the GUI
