@@ -35,6 +35,8 @@ class SVDApp(tk.Tk):                                                        #---
         frame = self.frames[cont]
         frame.tkraise()
 
+        """ for f in self.frames.values():
+            f.hide() """
 
 class MainPage(ttk.Frame):                                                  #-----------Main Page of the GUI
 
@@ -106,7 +108,7 @@ class ScanPage(ttk.Frame):                                                  #---
         self.match_label.pack(side=tk.LEFT)
 
         match_name = self.match.find_source_image("./source_images/")
-        self.match_label_name = ttk.Label(match_frame, text=f"{match_name}")
+        self.match_label_name = ttk.Label(match_frame, text=f"{match_name.split('_')[0]}")
         self.match_label_name.pack(side=tk.LEFT, padx=(5, 0))
 
         # Score Labels
@@ -137,7 +139,7 @@ class ScanPage(ttk.Frame):                                                  #---
             imgtk = ImageTk.PhotoImage(image=img)                           #-----------Converting the Image object to an ImageTk object
             self.image_label.imgtk = imgtk                                  #-----------Setting the image label to the new image
             self.image_label.configure(image=imgtk)                         #-----------Configuring the image label
-        self.image_label.after(30, self.update_image)                       #-----------Calling the update_image function again after 10ms
+        self.image_label.after(100, self.update_image)                       #-----------Calling the update_image function again after 10ms
     
     def take_photo_and_predict(self):                                                   #-----------Function to save a photo as np-array
         if hasattr(self, 'current_frame'):
@@ -146,7 +148,7 @@ class ScanPage(ttk.Frame):                                                  #---
             print(self.match)
 
             match_name = self.match.find_source_image("./source_images/")
-            self.match_label_name.configure(text=f"{match_name}")
+            self.match_label_name.configure(text=f"{match_name.split('_')[0]}")
             self.score_label_value.configure(text=f"{round(self.match.score)}")
         else:
             print("No current frame available")
@@ -188,21 +190,17 @@ class TrainPage(ttk.Frame):                                                 #---
 
         # Button for saving the new entry
         save_button = ttk.Button(train_frame, text="Save Entry", command=self.save_new_entry)
-        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=0)
 
         # Button for resetting the entry
         reset_button = ttk.Button(train_frame, text="Reset Entry", command=self.reset_entry)
-        reset_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+        reset_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=0)
 
         back_button = ttk.Button(train_frame, text="Back", command=lambda: controller.show_frame(MainPage))
         back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=10)
 
-
         self.images_frame = ttk.Frame(train_frame)
         self.images_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=5, pady=5)
-
-        
-
 
         self.update_image()
 
@@ -210,14 +208,13 @@ class TrainPage(ttk.Frame):                                                 #---
         frame = self.camera_handler.get_frame()                             #-----------Reading the frame from the camera
         if frame is not None:
             self.current_frame = frame                                      #-----------Setting the current frame to the new frame
-            resized_frame = cv2.resize(frame, (240, 180))                   #-----------Resizing the frame
+            resized_frame = cv2.resize(frame, (180, 135))                   #-----------Resizing the frame
             cv2image = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)       #-----------Converting the frame to RGB fromt the weird BGR
             img = Image.fromarray(cv2image)                                 #-----------Converting the frame to an Image object
             imgtk = ImageTk.PhotoImage(image=img)                           #-----------Converting the Image object to an ImageTk object
             self.image_label.imgtk = imgtk                                  #-----------Setting the image label to the new image
             self.image_label.configure(image=imgtk)                         #-----------Configuring the image label
-        self.image_label.after(30, self.update_image)                       #-----------Calling the update_image function again after 10ms
-
+        self.image_label.after(100, self.update_image)                      #-----------Calling the update_image function again after 10ms
 
     def update_images_frame(self, events=None):
         # Clear the current images
@@ -274,12 +271,72 @@ class TrainPage(ttk.Frame):                                                 #---
 
 class ViewPage(ttk.Frame):                                                  #-----------View Page of the GUI
     
-        def __init__(self, parent, controller, camera_handler):
-            tk.Frame.__init__(self, parent)
-    
-            label = ttk.Label(self, text="View Page", font=LARGEFONT)
-            label.grid(row=0, column=4, padx=10, pady=10)
+    def __init__(self, parent, controller, camera_handler):
+        tk.Frame.__init__(self, parent)
 
+        label = ttk.Label(self, text="Trained Objects", font=LARGEFONT)
+        label.pack(fill=tk.BOTH, expand=tk.TRUE, pady=10, padx=10)
+
+        self.main_frame = ttk.Frame(self)
+        self.main_frame.pack(fill=tk.BOTH, expand=tk.TRUE, padx=10, pady=10)
+
+        self.canvas = tk.Canvas(self.main_frame, height=70)
+        self.scrollbar = ttk.Scrollbar(self.main_frame, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas)
+
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        self.scrollable_frame.bind("<Configure>", self._on_frame_configure)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+
+        self.back_button = ttk.Button(self, text="Back", command=lambda: controller.show_frame(MainPage))
+        self.back_button.pack(fill=tk.BOTH, padx=10, pady=10)
+
+        self.refresh_interval = 5000 # ms, (5sec)
+        self.check_for_updates()
+
+    def _on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def add_image(self, img_path, name, row, col):
+        # Load and resize the image
+        img = Image.open(img_path)
+        img = img.resize((75, 75))
+        img = ImageTk.PhotoImage(img)
+
+        # Create image label
+        img_label = ttk.Label(self.scrollable_frame, image=img)
+        img_label.image = img  # Reference to avoid garbage collection, needed apparently
+        img_label.grid(row=row, column=col, padx=10, pady=5)
+
+        # Create text label
+        text_label = ttk.Label(self.scrollable_frame, text=name)
+        text_label.grid(row=row + 1, column=col, padx=10, pady=5)
+
+    def check_for_updates(self):
+        self.find_object_images()
+        self.after(self.refresh_interval, self.check_for_updates)
+
+    def find_object_images(self):
+        existing_entries = {}
+        row = 0
+        col = 0
+        for filename in os.listdir("./source_images/"):
+            name = filename.split("_")[0]
+            if name not in existing_entries:
+                existing_entries[name] = cv2.imread(f"./source_images/{filename}")
+                self.add_image(f"./source_images/{filename}", name, row, col)
+                col += 1
+                if col > 3:
+                    col = 0
+                    row += 2
 
 
 if __name__ == "__main__":                                                  #-----------Main function to run the GUI
