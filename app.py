@@ -96,9 +96,9 @@ class ScanPage(ttk.Frame):                                                  #---
         button_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.RIGHT, padx=10, pady=10)
 
         save_button = ttk.Button(button_frame, text="Scan Image", command=self.take_photo_and_predict)
-        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=10)
+        save_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=10, pady=5)
 
-        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(fill='x', padx=10, pady=5)
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(fill='x', padx=10, pady=1)
         
         # Match Labels
         match_frame = ttk.Frame(button_frame)
@@ -121,10 +121,10 @@ class ScanPage(ttk.Frame):                                                  #---
         self.score_label_value = ttk.Label(score_frame, text=f"{self.match.score}")
         self.score_label_value.pack(side=tk.LEFT, padx=(5, 0))
 
-        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(fill='x', padx=10, pady=5)
+        ttk.Separator(button_frame, orient=tk.HORIZONTAL).pack(fill='x', padx=10, pady=1)
 
         back_button = ttk.Button(button_frame, text="Back", command=lambda: controller.show_frame(MainPage))
-        back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=10)
+        back_button.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.BOTTOM, padx=10, pady=5)
 
         self.update_image()
 
