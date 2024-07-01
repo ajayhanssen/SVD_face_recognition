@@ -49,10 +49,10 @@ class StorePage(ttk.Frame):
         self.controller = controller
 
         self.label = ttk.Label(self)
-        self.label.pack()
+        self.label.pack(side=tk.LEFT, padx=10, pady=10)
 
         self.snap_button = ttk.Button(self, text="Snap Photo", command=self.snap_photo)
-        self.snap_button.pack(pady=10)
+        self.snap_button.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=True)
 
         # Open the camera
         self.cap = cv2.VideoCapture(0)
@@ -71,6 +71,7 @@ class StorePage(ttk.Frame):
         if ret:
             # Convert the frame to RGB (apparently opencv uses BGR)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (320, 240))
             # Convert the frame to an ImageTk object
             img = Image.fromarray(frame)
             imgtk = ImageTk.PhotoImage(image=img)
@@ -85,7 +86,7 @@ class StorePage(ttk.Frame):
         if ret:
             # Generate a unique filename based on the current date and time
             filename = datetime.now().strftime("%Y%m%d_%H%M%S") + ".jpg"
-            absolute_filename = os.path.abspath(f"source_images/{filename}")
+            absolute_filename = os.path.abspath(f"photo_taker_src/{filename}")
             # Save the captured frame to a file
             if cv2.imwrite(absolute_filename, frame):
                 print("Image saved as", absolute_filename)
